@@ -1,0 +1,3 @@
+[submodule "nene"]
+	path = nene
+	url = https://github.com/Andre-LA/nene.git
