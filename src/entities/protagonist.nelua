@@ -1,0 +1,104 @@
+require 'math'
+
+require 'nene.core'
+require 'nene.math'
+
+require 'entities.namespace'
+require 'entities.projectile'
+
+local Vec2, Rect = Math.Vec2, Math.Rect
+
+local GRAV_ACCELERATION <comptime> = 4
+local HOR_SPEED <comptime> = 32
+local HOR_FORCE <comptime> = 4
+local VER_MAX_SPEED <comptime> = 128
+local HOR_MAX_SPEED <comptime> = 128
+
+local Protagonist = @record{
+  pos: Vec2,
+  vel: Vec2,
+  ammo: byte,
+  projectiles: [10]Entities.Projectile,
+}
+
+function Protagonist.init(): Protagonist
+  return Protagonist{
+    pos = {64, 0},
+    vel = {0, 1},
+    ammo = 10,
+  }
+end
+
+function Protagonist:get_hitbox(): Rect
+  return Rect.from_vec2(self.pos, {16, 16})
+end
+
+function Protagonist:jump(mouse_dir: Vec2)
+  self.vel.y = VER_MAX_SPEED * -mouse_dir.y
+  self.vel.x = HOR_MAX_SPEED * -mouse_dir.x
+end
+
+function Protagonist:fire(mouse_pos: Vec2)
+  if self.ammo <= 0 then return end
+
+  for i = 0, < (#self.projectiles) do
+    if not self.projectiles[i].active then
+      local mouse_dir = Vec2.normalized(mouse_pos - self.pos)
+      self.projectiles[i] = Entities.Projectile.init(self.pos, mouse_dir)
+
+      self:jump(mouse_dir)
+
+      self.ammo = math.max(self.ammo - 1, 0)
+      break
+    end
+  end
+end
+
+function Protagonist:reload()
+  self.ammo = math.min(self.ammo + 1, 10)
+end
+
+function Protagonist:update(nene: *Nene)
+  print(self.vel.x)
+  self.vel.y = self.vel.y + GRAV_ACCELERATION
+
+  local input_h = (do
+    if nene:get_scancode(SDL_SCANCODE_A) then
+      in (HOR_SPEED * -HOR_FORCE)
+    elseif nene:get_scancode(SDL_SCANCODE_D) then
+      in (HOR_SPEED * HOR_FORCE)
+    else
+      in 0
+    end
+  end)
+
+  self.vel.x = self.vel.x + input_h * nene.delta_time
+
+  if math.abs(self.vel.y) > VER_MAX_SPEED then
+    self.vel.y = VER_MAX_SPEED * math.sign(self.vel.y)
+  end
+
+  if math.abs(self.vel.x) > HOR_MAX_SPEED then
+    self.vel.x = HOR_MAX_SPEED * math.sign(self.vel.x)
+  end
+
+  self.pos = self.pos + self.vel * nene.delta_time
+
+  if nene:get_mouse_button(0, true) then
+    self:fire(nene.mouse_pos)
+  end
+
+  for i = 0, < (#self.projectiles) do
+    self.projectiles[i]:update(nene)
+  end
+end
+
+function Protagonist:draw(nene: *Nene)
+  nene:render_draw_rect(self:get_hitbox(), false, Color.Palette.yellow)
+
+  for i = 0, < (#self.projectiles) do
+    self.projectiles[i]:draw(nene)
+  end
+end
+
+global Entities.Protagonist = Protagonist

@@ -1,0 +1,71 @@
+require 'math'
+
+require 'nene.core'
+require 'nene.math'
+
+require 'entities.namespace'
+require 'entities.protagonist'
+
+local Vec2, Rect = Math.Vec2, Math.Rect
+
+local MAX_SPEED <comptime> = 32
+local ACCELERATION <comptime> = 2
+
+local Enemy = @record{
+  pos: Vec2,
+  vel: Vec2,
+  active: boolean,
+}
+
+function Enemy.init(): Enemy
+  return Enemy{
+    pos = {math.random(0, 128), 320},
+    vel = {0, -1},
+    active = true,
+  }
+end
+
+function Enemy:get_hitbox(): Rect
+  return Rect.from_vec2(self.pos, {16, 16})
+end
+
+function Enemy:destroy_if_hit(proj: *Entities.Projectile): boolean
+  if not proj.active then return false end
+
+  if proj:get_hitbox():is_intersecting(self:get_hitbox()) then
+    self.active = false
+    proj.active = false
+    return true
+  else
+    return false
+  end
+end
+
+function Enemy:update(protagonist: *Entities.Protagonist, nene: *Nene)
+  if not self.active then return end
+
+  local diff_pos = protagonist.pos - self.pos
+  local dir = diff_pos:normalized()
+
+  self.vel = self.vel + dir * ACCELERATION
+
+  if self.vel:len_sqr() > (MAX_SPEED ^ 2) then
+    self.vel = self.vel:normalized() * MAX_SPEED
+  end
+
+  self.pos = self.pos + self.vel * nene.delta_time
+
+  for i = 0, < (#protagonist.projectiles) do
+    if self:destroy_if_hit(protagonist.projectiles[i]) then
+      protagonist:reload()
+    end
+  end
+end
+
+
+function Enemy:draw(nene: *Nene)
+  if not self.active then return end
+  nene:render_draw_rect(self:get_hitbox(), false, Color.Palette.red)
+end
+
+global Entities.Enemy = Enemy

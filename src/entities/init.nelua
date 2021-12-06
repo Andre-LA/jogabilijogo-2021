@@ -1,0 +1,4 @@
+require 'entities.namespace'
+require 'entities.protagonist'
+require 'entities.enemy'
+require 'entities.projectile'
