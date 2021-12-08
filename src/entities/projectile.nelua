@@ -30,6 +30,9 @@ function Projectile:update(nene: *Nene)
   if not self.active then return end
 
   self.pos = self.pos + self.dir * SPEED * nene.delta_time
+  if self.pos.x > Confs.window_size.w or self.pos.x < -64 or self.pos.y > Confs.window_size.h or self.pos.y < -64 then
+    self.active = false
+  end
 end
 
 function Projectile:draw(nene: *Nene)

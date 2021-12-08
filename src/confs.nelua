@@ -7,8 +7,13 @@ local SCREEN_WIDTH <comptime>, SCREEN_HEIGHT <comptime> = (WIN_WIDTH / 2), (WIN_
 local PLAYABLE_SPACE = (TILE_DIMENSIONS * 12) -- wall is 2 tiles
 
 global Confs = @record{}
+
 global Confs.window_size: record{ w: integer, h: integer } = { WIN_WIDTH, WIN_HEIGHT }
 global Confs.screen_size: record{ w: integer, h: integer } = { SCREEN_WIDTH, SCREEN_HEIGHT }
+
 global Confs.tile_dimensions = TILE_DIMENSIONS
+global Confs.frame_duration: uint32 = 100
+
 global Confs.playable_space: record{size: integer, margin: integer} = { PLAYABLE_SPACE, (SCREEN_WIDTH - (PLAYABLE_SPACE + PLAYABLE_SPACE/2)) }
-print(Confs.playable_space.size, Confs.playable_space.margin, Confs.playable_space.size - Confs.playable_space.margin)
+
+global Confs.enemy_spawn_interval: uint32 = 1000

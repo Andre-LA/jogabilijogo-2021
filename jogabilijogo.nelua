@@ -2,48 +2,112 @@ require 'confs'
 
 require 'nene.core'
 require 'nene.colors'
+require 'nene.math'
 require 'nene.texture'
+
+require 'nene.font'
+require 'nene.text_texture'
 
 require 'entities'
 
-local ok, nene = Nene.init("Jogabilijogo 2021", Confs.window_size.w, Confs.window_size.h)
+local Vec2 = Math.Vec2
+
+local ok, nene = Nene.init("Jogabilijogo 2021", Confs.window_size.w, Confs.window_size.h) --, nil, nil, SDL_WINDOW_FULLSCREEN)
 check(ok)
 defer nene:terminate() end
 
 local screen: Texture = Texture.create_texture(nene, Confs.screen_size.w, Confs.screen_size.h, nil, SDL_TEXTUREACCESS_TARGET)
 defer screen:destroy() end
 
-local protagonist = Entities.Protagonist.init()
+local protagonist_tex, ok = Texture.load(nene, 'res/arts/characters/player.png')
+check(ok, 'could not load player texture')
+defer protagonist_tex:destroy() end
 
-local enemies: [7]Entities.Enemy = {
-  Entities.Enemy.init(),
-  Entities.Enemy.init(),
-  Entities.Enemy.init(),
-  Entities.Enemy.init(),
-  Entities.Enemy.init(),
-  Entities.Enemy.init(),
-  Entities.Enemy.init()
+local enemy_tex, ok = Texture.load(nene, 'res/arts/characters/enemy.png')
+check(ok, 'could not load enemy texture')
+defer enemy_tex:destroy() end
+
+local aim_tex, ok = Texture.load(nene, 'res/arts/characters/aim.png')
+check(ok, 'could not load aim texture')
+defer aim_tex:destroy() end
+
+local bg_tex, ok = Texture.load(nene, 'res/arts/characters/scenary.png')
+check(ok, 'could not load scenary bg texture')
+defer bg_tex:destroy() end
+
+local ammo_counter_font, ok = Font.load('res/monogram_extended.ttf', 24)
+check(ok, 'could not load "monogram_extended.ttf, 10"')
+defer ammo_counter_font:destroy() end
+
+local ammo_counter_texts: [11]TextTexture = {
+  TextTexture.new(nene, '0', ammo_counter_font),
+  TextTexture.new(nene, '1', ammo_counter_font),
+  TextTexture.new(nene, '2', ammo_counter_font),
+  TextTexture.new(nene, '3', ammo_counter_font),
+  TextTexture.new(nene, '4', ammo_counter_font),
+  TextTexture.new(nene, '5', ammo_counter_font),
+  TextTexture.new(nene, '6', ammo_counter_font),
+  TextTexture.new(nene, '7', ammo_counter_font),
+  TextTexture.new(nene, '8', ammo_counter_font),
+  TextTexture.new(nene, '9', ammo_counter_font),
+  TextTexture.new(nene, '10', ammo_counter_font),
 }
+
+defer
+  for i = 0, < #ammo_counter_texts do
+    ammo_counter_texts[i]:destroy()
+  end
+end
+
+local protagonist = Entities.Protagonist.init(protagonist_tex)
+
+local last_enemy_spawn = 0_uint32
+
+local enemies: [10]Entities.Enemy = {}
+
+local function spawn_enemy()
+  for i = 0, < #enemies do
+    if not enemies[i].active then
+      enemies[i] = Entities.Enemy.init(enemy_tex, nene.current_time)
+
+      last_enemy_spawn = nene.current_time
+      return
+    end
+  end
+end
+
+SDL_ShowCursor(SDL_DISABLE)
 
 repeat
   nene:poll_events()
 
+  if nene.current_time - last_enemy_spawn > Confs.enemy_spawn_interval then
+    spawn_enemy()
+  end
+
   protagonist:update(nene)
 
-  for i = 0, < (#enemies) do
+  for i = 0, < #enemies do
     enemies[i]:update(protagonist, nene)
   end
 
   nene:set_render_target(screen:get())
   nene:render_clear(Color.Palette.bg)
 
+  bg_tex:draw(nene, nil, nil, {Confs.playable_space.margin - Confs.tile_dimensions * 2, 0})
+
   protagonist:draw(nene)
 
-  for i = 0, < (#enemies) do
+  for i = 0, < #enemies do
     enemies[i]:draw(nene)
   end
-  nene:set_render_target(nil)
 
+  ammo_counter_texts[protagonist.ammo]:draw(nene, nene.mouse_pos * 0.5 + Vec2{8, -16})
+
+  local aimx, aimy = math.ifloor(nene.mouse_pos.x * 0.5 - aim_tex.width / 2), math.ifloor(nene.mouse_pos.y * 0.5 - aim_tex.height / 2)
+  aim_tex:draw(nene, nil, nil, {aimx, aimy})
+
+  nene:set_render_target(nil)
 
   screen:draw(nene)
   nene:render_present()

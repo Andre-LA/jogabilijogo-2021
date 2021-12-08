@@ -4,6 +4,7 @@ require 'utils'
 
 require 'nene.core'
 require 'nene.math'
+require 'nene.texture'
 
 require 'entities.namespace'
 require 'entities.projectile'
@@ -19,13 +20,19 @@ local HOR_MAX_SPEED <comptime> = 128
 local Protagonist = @record{
   pos: Vec2,
   vel: Vec2,
+  sprite: Texture,
   ammo: byte,
+  last_frame_changed: uint32,
+  frame: integer,
+  life_points: byte,
   projectiles: [10]Entities.Projectile,
 }
 
-function Protagonist.init(): Protagonist
+function Protagonist.init(sprite: Texture): Protagonist
   return Protagonist{
     pos = {64, 64},
+    =sprite,
+    life_points = 10,
     vel = {0, -VER_MAX_SPEED},
     ammo = 10,
   }
@@ -38,6 +45,11 @@ end
 function Protagonist:jump(mouse_dir: Vec2)
   self.vel.y = VER_MAX_SPEED * -mouse_dir.y
   self.vel.x = HOR_MAX_SPEED * -mouse_dir.x
+end
+
+function Protagonist:hurt(hit_dir: number)
+  self:jump({hit_dir, -1})
+  self.life_points = self.life_points - 1
 end
 
 function Protagonist:fire(mouse_pos: Vec2)
@@ -57,7 +69,7 @@ function Protagonist:fire(mouse_pos: Vec2)
 end
 
 function Protagonist:reload()
-  self.ammo = math.min(self.ammo + 1, 10)
+  self.ammo = math.min(self.ammo + 3, 10)
 end
 
 function Protagonist:update(nene: *Nene)
@@ -84,8 +96,14 @@ function Protagonist:update(nene: *Nene)
   end
 
   self.pos = self.pos + self.vel * nene.delta_time
+  local px, hit_wall_left, hit_wall_right = Utils.clamp_on_playable_space(self.pos.x)
+  self.pos.x = px
 
-  self.pos.x = Utils.clamp_on_playable_space(self.pos.x)
+  if hit_wall_left then
+    self:hurt(-1)
+  elseif hit_wall_right then
+    self:hurt(1)
+  end
 
   if nene:get_mouse_button(0, true) then
     self:fire(nene.mouse_pos * 0.5)
@@ -94,10 +112,36 @@ function Protagonist:update(nene: *Nene)
   for i = 0, < (#self.projectiles) do
     self.projectiles[i]:update(nene)
   end
+
+  if nene.current_time - self.last_frame_changed > Confs.frame_duration then
+    self.last_frame_changed = nene.current_time
+    --self.frame = (self.frame + 1) % 3
+  end
 end
 
 function Protagonist:draw(nene: *Nene)
-  nene:render_draw_rect(self:get_hitbox(), false, Color.Palette.yellow)
+  local mouse_dir = Vec2.normalized(nene.mouse_pos * 0.5 - self.pos)
+  local mouse_angle = math.deg(math.atan(-mouse_dir.y, mouse_dir.x)) + 180 - (45/2)
+
+  local ysprite = (do
+    switch math.ifloor(mouse_angle // 45)
+    case 5 then in 0
+    case 6 then in 1
+    case 7, -1 then in 2
+    case 0 then in 3
+    case 1 then in 4
+    case 2 then in 5
+    case 3 then in 6
+    case 4 then in 7
+    else in 0
+    end
+  end)
+
+  local hitbox = self:get_hitbox()
+  local drawpos: Vec2 = {math.ifloor(hitbox.x), math.ifloor(hitbox.y)}
+
+  self.sprite:draw(nene, nil, {22 * self.frame, ysprite * 29, 22, 29}, Rect{drawpos.x, drawpos.y, 22, 29})
+  nene:render_draw_rect(hitbox, true, Color.Palette.yellow)
 
   for i = 0, < (#self.projectiles) do
     self.projectiles[i]:draw(nene)

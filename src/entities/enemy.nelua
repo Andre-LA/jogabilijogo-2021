@@ -2,6 +2,7 @@ require 'math'
 
 require 'nene.core'
 require 'nene.math'
+require 'nene.texture'
 
 require 'confs'
 
@@ -16,11 +17,16 @@ local ACCELERATION <comptime> = 2
 local Enemy = @record{
   pos: Vec2,
   vel: Vec2,
+  sprite: Texture,
+  frame: integer,
+  last_frame_changed: uint32,
   active: boolean,
 }
 
-function Enemy.init(): Enemy
+function Enemy.init(sprite: Texture, current_time: uint32): Enemy
   return Enemy{
+    =sprite,
+    last_frame_changed = current_time,
     pos = {
       math.random(
         math.min(Confs.playable_space.margin, Confs.playable_space.size + Confs.playable_space.margin),
@@ -49,6 +55,17 @@ function Enemy:destroy_if_hit(proj: *Entities.Projectile): boolean
   end
 end
 
+function Enemy:did_hit_player(protagonist: *Entities.Protagonist): boolean
+  if protagonist:get_hitbox():is_intersecting(self:get_hitbox()) then
+    local hit_dir = Vec2.normalized(protagonist.pos - self.pos)
+    protagonist:hurt(hit_dir.x)
+    self.active = false
+    return true
+  else
+    return false
+  end
+end
+
 function Enemy:update(protagonist: *Entities.Protagonist, nene: *Nene)
   if not self.active then return end
 
@@ -63,17 +80,27 @@ function Enemy:update(protagonist: *Entities.Protagonist, nene: *Nene)
 
   self.pos = self.pos + self.vel * nene.delta_time
 
-  for i = 0, < (#protagonist.projectiles) do
+  for i = 0, < #protagonist.projectiles do
     if self:destroy_if_hit(protagonist.projectiles[i]) then
       protagonist:reload()
     end
+  end
+
+  if nene.current_time - self.last_frame_changed > Confs.frame_duration then
+    self.last_frame_changed = nene.current_time
+    self.frame = (self.frame + 1) % 6
   end
 end
 
 
 function Enemy:draw(nene: *Nene)
   if not self.active then return end
-  nene:render_draw_rect(self:get_hitbox(), false, Color.Palette.red)
+
+  local hitbox = self:get_hitbox()
+  local drawpos: Vec2 = {math.ifloor(hitbox.x), math.ifloor(hitbox.y)}
+
+  self.sprite:draw(nene, nil, {16 * self.frame, 0, 16, 24}, Rect{drawpos.x, drawpos.y, 16, 24})
+  nene:render_draw_rect(hitbox, true, Color.Palette.red)
 end
 
 global Entities.Enemy = Enemy
