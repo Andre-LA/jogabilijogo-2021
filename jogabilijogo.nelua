@@ -94,7 +94,9 @@ repeat
   nene:set_render_target(screen:get())
   nene:render_clear(Color.Palette.bg)
 
-  bg_tex:draw(nene, nil, nil, {Confs.playable_space.margin - Confs.tile_dimensions * 2, 0})
+  nene.render_offset.y = protagonist.pos.y - Confs.screen_size.h // 3
+
+  bg_tex:draw(nene, nil, nil, {Confs.screen_size.w//2 - bg_tex.width // 2, 0})
 
   protagonist:draw(nene)
 
