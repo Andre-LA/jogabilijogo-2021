@@ -1,19 +1,25 @@
+require 'confs'
+
 require 'nene.core'
 require 'nene.colors'
 require 'nene.texture'
 
 require 'entities'
 
-local ok, nene = Nene.init("Jogabilijogo 2021", 800, 600)
+local ok, nene = Nene.init("Jogabilijogo 2021", Confs.window_size.w, Confs.window_size.h)
 check(ok)
 defer nene:terminate() end
 
-local screen: Texture = Texture.create_texture(nene, 400, 300, nil, SDL_TEXTUREACCESS_TARGET)
+local screen: Texture = Texture.create_texture(nene, Confs.screen_size.w, Confs.screen_size.h, nil, SDL_TEXTUREACCESS_TARGET)
 defer screen:destroy() end
 
 local protagonist = Entities.Protagonist.init()
 
-local enemies: [3]Entities.Enemy = {
+local enemies: [7]Entities.Enemy = {
+  Entities.Enemy.init(),
+  Entities.Enemy.init(),
+  Entities.Enemy.init(),
+  Entities.Enemy.init(),
   Entities.Enemy.init(),
   Entities.Enemy.init(),
   Entities.Enemy.init()
@@ -28,7 +34,7 @@ repeat
     enemies[i]:update(protagonist, nene)
   end
 
-  --nene:set_render_target(screen:get())
+  nene:set_render_target(screen:get())
   nene:render_clear(Color.Palette.bg)
 
   protagonist:draw(nene)
@@ -36,8 +42,9 @@ repeat
   for i = 0, < (#enemies) do
     enemies[i]:draw(nene)
   end
-  --nene:set_render_target(nil)
+  nene:set_render_target(nil)
 
-  --screen:draw(nene)
+
+  screen:draw(nene)
   nene:render_present()
 until nene.quit

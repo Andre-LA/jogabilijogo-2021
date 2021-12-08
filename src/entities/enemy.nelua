@@ -3,6 +3,8 @@ require 'math'
 require 'nene.core'
 require 'nene.math'
 
+require 'confs'
+
 require 'entities.namespace'
 require 'entities.protagonist'
 
@@ -19,7 +21,13 @@ local Enemy = @record{
 
 function Enemy.init(): Enemy
   return Enemy{
-    pos = {math.random(0, 128), 320},
+    pos = {
+      math.random(
+        math.min(Confs.playable_space.margin, Confs.playable_space.size + Confs.playable_space.margin),
+        math.max(Confs.playable_space.margin, Confs.playable_space.size + Confs.playable_space.margin)
+      ),
+      320
+    },
     vel = {0, -1},
     active = true,
   }

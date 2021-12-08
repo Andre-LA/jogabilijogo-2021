@@ -1,0 +1,9 @@
+require 'confs'
+
+global Utils = @record{}
+
+function Utils.clamp_on_playable_space(pos_x: number): number
+  pos_x = math.min(pos_x, Confs.screen_size.w - Confs.playable_space.margin)
+  pos_x = math.max(pos_x, 0 + Confs.playable_space.margin)
+  return pos_x
+end

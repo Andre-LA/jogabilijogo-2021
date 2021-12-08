@@ -1,5 +1,7 @@
 require 'math'
 
+require 'utils'
+
 require 'nene.core'
 require 'nene.math'
 
@@ -23,14 +25,14 @@ local Protagonist = @record{
 
 function Protagonist.init(): Protagonist
   return Protagonist{
-    pos = {64, 0},
-    vel = {0, 1},
+    pos = {64, 64},
+    vel = {0, -VER_MAX_SPEED},
     ammo = 10,
   }
 end
 
 function Protagonist:get_hitbox(): Rect
-  return Rect.from_vec2(self.pos, {16, 16})
+  return Rect.from_vec2(self.pos - Vec2{8, 8}, {16, 16})
 end
 
 function Protagonist:jump(mouse_dir: Vec2)
@@ -59,7 +61,6 @@ function Protagonist:reload()
 end
 
 function Protagonist:update(nene: *Nene)
-  print(self.vel.x)
   self.vel.y = self.vel.y + GRAV_ACCELERATION
 
   local input_h = (do
@@ -84,8 +85,10 @@ function Protagonist:update(nene: *Nene)
 
   self.pos = self.pos + self.vel * nene.delta_time
 
+  self.pos.x = Utils.clamp_on_playable_space(self.pos.x)
+
   if nene:get_mouse_button(0, true) then
-    self:fire(nene.mouse_pos)
+    self:fire(nene.mouse_pos * 0.5)
   end
 
   for i = 0, < (#self.projectiles) do

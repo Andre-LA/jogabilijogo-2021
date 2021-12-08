@@ -6,7 +6,6 @@ require 'nene.math'
 require 'entities.namespace'
 
 local Vec2, Rect = Math.Vec2, Math.Rect
-
 local SPEED <comptime> = 128
 
 local Projectile = @record{
