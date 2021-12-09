@@ -23,6 +23,10 @@ local protagonist_tex, ok = Texture.load(nene, 'res/arts/characters/player.png')
 check(ok, 'could not load player texture')
 defer protagonist_tex:destroy() end
 
+local projectile_tex, ok = Texture.load(nene, 'res/arts/characters/bullet.png')
+check(ok, 'could not load projectile texture')
+defer projectile_tex:destroy() end
+
 local enemy_tex, ok = Texture.load(nene, 'res/arts/characters/enemy.png')
 check(ok, 'could not load enemy texture')
 defer enemy_tex:destroy() end
@@ -59,7 +63,7 @@ defer
   end
 end
 
-local protagonist = Entities.Protagonist.init(protagonist_tex)
+local protagonist = Entities.Protagonist.init(protagonist_tex, projectile_tex)
 
 local last_enemy_spawn = 0_uint32
 
@@ -92,11 +96,9 @@ repeat
   end
 
   nene:set_render_target(screen:get())
-  nene:render_clear(Color.Palette.bg)
+  nene:render_clear(Color{33, 37, 36})
 
-  nene.render_offset.y = protagonist.pos.y - Confs.screen_size.h // 3
-
-  bg_tex:draw(nene, nil, nil, {Confs.screen_size.w//2 - bg_tex.width // 2, 0})
+  bg_tex:draw(nene, nil, nil, {Confs.playable_space.margin, 0})
 
   protagonist:draw(nene)
 
@@ -104,8 +106,7 @@ repeat
     enemies[i]:draw(nene)
   end
 
-  ammo_counter_texts[protagonist.ammo]:draw(nene, nene.mouse_pos * 0.5 + Vec2{8, -16})
-
+  ammo_counter_texts[protagonist.ammo]:draw(nene, nene.mouse_pos * 0.5 + Vec2{ 8, -16 })
   local aimx, aimy = math.ifloor(nene.mouse_pos.x * 0.5 - aim_tex.width / 2), math.ifloor(nene.mouse_pos.y * 0.5 - aim_tex.height / 2)
   aim_tex:draw(nene, nil, nil, {aimx, aimy})
 

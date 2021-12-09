@@ -2,7 +2,7 @@ require 'nene.math'
 
 local TILE_DIMENSIONS <comptime> = 16
 
-local WIN_WIDTH <comptime>, WIN_HEIGHT <comptime> = 800, 600
+local WIN_WIDTH <comptime>, WIN_HEIGHT <comptime> = 800, 540
 local SCREEN_WIDTH <comptime>, SCREEN_HEIGHT <comptime> = (WIN_WIDTH / 2), (WIN_HEIGHT / 2)
 local PLAYABLE_SPACE = (TILE_DIMENSIONS * 12) -- wall is 2 tiles
 
@@ -14,6 +14,6 @@ global Confs.screen_size: record{ w: integer, h: integer } = { SCREEN_WIDTH, SCR
 global Confs.tile_dimensions = TILE_DIMENSIONS
 global Confs.frame_duration: uint32 = 100
 
-global Confs.playable_space: record{size: integer, margin: integer} = { PLAYABLE_SPACE, (SCREEN_WIDTH - (PLAYABLE_SPACE + PLAYABLE_SPACE/2)) }
+global Confs.playable_space: record{size: integer, margin: integer} = { PLAYABLE_SPACE, ((SCREEN_WIDTH - (PLAYABLE_SPACE + TILE_DIMENSIONS * 4)) / 2) }
 
 global Confs.enemy_spawn_interval: uint32 = 1000

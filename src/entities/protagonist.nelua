@@ -21,6 +21,7 @@ local Protagonist = @record{
   pos: Vec2,
   vel: Vec2,
   sprite: Texture,
+  proj_sprite: Texture,
   ammo: byte,
   last_frame_changed: uint32,
   frame: integer,
@@ -28,10 +29,11 @@ local Protagonist = @record{
   projectiles: [10]Entities.Projectile,
 }
 
-function Protagonist.init(sprite: Texture): Protagonist
+function Protagonist.init(sprite: Texture, proj_sprite: Texture): Protagonist
   return Protagonist{
-    pos = {64, 64},
+    pos = {Confs.screen_size.w // 2, 64},
     =sprite,
+    =proj_sprite,
     life_points = 10,
     vel = {0, -VER_MAX_SPEED},
     ammo = 10,
@@ -43,8 +45,8 @@ function Protagonist:get_hitbox(): Rect
 end
 
 function Protagonist:jump(mouse_dir: Vec2)
-  self.vel.y = VER_MAX_SPEED * -mouse_dir.y
-  self.vel.x = HOR_MAX_SPEED * -mouse_dir.x
+  self.vel.y = VER_MAX_SPEED * 0.75 * -mouse_dir.y
+  self.vel.x = HOR_MAX_SPEED * 1.25 * -mouse_dir.x
 end
 
 function Protagonist:hurt(hit_dir: number)
@@ -58,7 +60,7 @@ function Protagonist:fire(mouse_pos: Vec2)
   for i = 0, < (#self.projectiles) do
     if not self.projectiles[i].active then
       local mouse_dir = Vec2.normalized(mouse_pos - self.pos)
-      self.projectiles[i] = Entities.Projectile.init(self.pos, mouse_dir)
+      self.projectiles[i] = Entities.Projectile.init(self.pos, mouse_dir, self.proj_sprite)
 
       self:jump(mouse_dir)
 
@@ -96,14 +98,16 @@ function Protagonist:update(nene: *Nene)
   end
 
   self.pos = self.pos + self.vel * nene.delta_time
-  local px, hit_wall_left, hit_wall_right = Utils.clamp_on_playable_space(self.pos.x)
-  self.pos.x = px
 
-  if hit_wall_left then
+
+  if self.pos.x < Confs.playable_space.margin + Confs.tile_dimensions * 2 + 8 then
     self:hurt(-1)
-  elseif hit_wall_right then
+  elseif self.pos.x > Confs.screen_size.w - Confs.playable_space.margin - Confs.tile_dimensions * 2 - 8 then
     self:hurt(1)
   end
+
+  self.pos.x = math.min(self.pos.x, Confs.screen_size.w - Confs.playable_space.margin - Confs.tile_dimensions * 2 - 8)
+  self.pos.x = math.max(self.pos.x, Confs.playable_space.margin + Confs.tile_dimensions * 2 + 8)
 
   if nene:get_mouse_button(0, true) then
     self:fire(nene.mouse_pos * 0.5)
@@ -115,7 +119,7 @@ function Protagonist:update(nene: *Nene)
 
   if nene.current_time - self.last_frame_changed > Confs.frame_duration then
     self.last_frame_changed = nene.current_time
-    --self.frame = (self.frame + 1) % 3
+    self.frame = (self.frame + 1) % 3
   end
 end
 
