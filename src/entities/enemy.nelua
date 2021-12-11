@@ -20,6 +20,7 @@ local Enemy = @record{
   sprite: Texture,
   frame: integer,
   last_frame_changed: uint32,
+  context: record{player_pos: Vec2},
   active: boolean,
 }
 
@@ -40,15 +41,19 @@ function Enemy.init(sprite: Texture, current_time: uint32): Enemy
 end
 
 function Enemy:get_hitbox(): Rect
-  return Rect.from_vec2(self.pos, {16, 16})
+  return Rect.from_vec2(self.pos, {16, 24})
+end
+
+function Enemy:destroy()
+  self.active = false
 end
 
 function Enemy:destroy_if_hit(proj: *Entities.Projectile): boolean
   if not proj.active then return false end
 
   if proj:get_hitbox():is_intersecting(self:get_hitbox()) then
-    self.active = false
-    proj.active = false
+    proj:destroy()
+    self:destroy()
     return true
   else
     return false
@@ -59,6 +64,7 @@ function Enemy:did_hit_player(protagonist: *Entities.Protagonist): boolean
   if protagonist:get_hitbox():is_intersecting(self:get_hitbox()) then
     local hit_dir = Vec2.normalized(protagonist.pos - self.pos)
     protagonist:hurt(hit_dir.x)
+    protagonist:jump(protagonist.pos + Vec2{0, -1})
     self.active = false
     return true
   else
@@ -66,7 +72,7 @@ function Enemy:did_hit_player(protagonist: *Entities.Protagonist): boolean
   end
 end
 
-function Enemy:update(protagonist: *Entities.Protagonist, nene: *Nene)
+function Enemy:update(protagonist: *Entities.Protagonist, enemies_destroyed: *uint8, nene: *Nene)
   if not self.active then return end
 
   local diff_pos = protagonist.pos - self.pos
@@ -82,6 +88,7 @@ function Enemy:update(protagonist: *Entities.Protagonist, nene: *Nene)
 
   for i = 0, < #protagonist.projectiles do
     if self:destroy_if_hit(protagonist.projectiles[i]) then
+      $enemies_destroyed = $enemies_destroyed + 1
       protagonist:reload()
     end
   end
@@ -90,17 +97,20 @@ function Enemy:update(protagonist: *Entities.Protagonist, nene: *Nene)
     self.last_frame_changed = nene.current_time
     self.frame = (self.frame + 1) % 6
   end
-end
 
+  self:did_hit_player(protagonist)
+
+  self.context.player_pos = protagonist.pos
+end
 
 function Enemy:draw(nene: *Nene)
   if not self.active then return end
 
   local hitbox = self:get_hitbox()
-  local drawpos: Vec2 = {math.ifloor(hitbox.x), math.ifloor(hitbox.y)}
+  local drawpos: Vec2 = {math.ifloor(self.pos.x), math.ifloor(self.pos.y)}
 
-  self.sprite:draw(nene, nil, {16 * self.frame, 0, 16, 24}, Rect{drawpos.x, drawpos.y, 16, 24})
-  nene:render_draw_rect(hitbox, true, Color.Palette.red)
+  local player_is_dir = self.context.player_pos.x > self.pos.x
+  self.sprite:draw(nene, nil, {16 * self.frame, 0, 16, 24}, Rect{drawpos.x, drawpos.y, 16, 24}, nil, nil, player_is_dir)
 end
 
 global Entities.Enemy = Enemy

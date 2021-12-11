@@ -30,6 +30,10 @@ function Projectile:get_hitbox(): Rect
   return Rect.from_vec2(self.pos, {8, 8})
 end
 
+function Projectile:destroy()
+  self.active = false
+end
+
 function Projectile:update(nene: *Nene)
   if not self.active then return end
 
@@ -41,7 +45,7 @@ function Projectile:update(nene: *Nene)
     self.pos.y > Confs.screen_size.h or
     self.pos.y < -8
   ) then
-    self.active = false
+    self:destroy()
   end
 
   if nene.current_time - self.last_frame_changed > Confs.frame_duration then
@@ -57,7 +61,6 @@ function Projectile:draw(nene: *Nene)
   local drawpos: Vec2 = {math.ifloor(hitbox.x), math.ifloor(hitbox.y)}
 
   self.sprite:draw(nene, nil, {4 * self.frame, 0, 4, 4}, Rect{drawpos.x, drawpos.y, 8, 8})
-  nene:render_draw_rect(hitbox, true, Color.Palette.green)
 end
 
 global Entities.Projectile = Projectile
