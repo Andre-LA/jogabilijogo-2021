@@ -39,6 +39,10 @@ local bg_tex, ok = Texture.load(nene, 'res/arts/characters/scenary.png')
 check(ok, 'could not load scenary bg texture')
 defer bg_tex:destroy() end
 
+local heart_tex, ok = Texture.load(nene, 'res/arts/characters/heart.png')
+check(ok, 'could not load heart texture')
+defer heart_tex:destroy() end
+
 local monogram24, ok = Font.load('res/monogram_extended.ttf', 24)
 check(ok, 'could not load "monogram_extended.ttf, 24"')
 defer monogram24:destroy() end
@@ -73,13 +77,13 @@ defer you_lost:destroy() end
 local you_won: TextTexture = TextTexture.new(nene, 'You Won!', monogram48)
 defer you_won:destroy() end
 
-local protagonist = Entities.Protagonist.init(protagonist_tex, projectile_tex)
+local protagonist = Entities.Protagonist.init(protagonist_tex, projectile_tex, heart_tex)
 
 local last_enemy_spawn = 0_uint32
 
 local enemies: [10]Entities.Enemy = {}
 
-local enemies_destroyed = 0_u8
+local enemies_destroyed, enemies_spawned = 0_u8, 0_byte
 
 local function spawn_enemy()
   for i = 0, < #enemies do
@@ -87,6 +91,7 @@ local function spawn_enemy()
       enemies[i] = Entities.Enemy.init(enemy_tex, nene.current_time)
 
       last_enemy_spawn = nene.current_time
+      enemies_spawned = enemies_spawned + 1
       return
     end
   end
@@ -97,8 +102,8 @@ SDL_ShowCursor(SDL_DISABLE)
 repeat
   nene:poll_events()
 
-  if protagonist.life_points > 0 or enemies_destroyed > 5 then
-    if nene.current_time - last_enemy_spawn > Confs.enemy_spawn_interval then
+  if (protagonist.life_points > 0  and protagonist.pos.y < Confs.screen_size.h) or enemies_destroyed >= Confs.enemies_count then
+    if nene.current_time - last_enemy_spawn > Confs.enemy_spawn_interval and enemies_spawned < Confs.enemies_count then
       spawn_enemy()
     end
 
@@ -112,9 +117,9 @@ repeat
   nene:set_render_target(screen:get())
   nene:render_clear(Color{33, 37, 36})
 
-  if enemies_destroyed > 5 then
+  if enemies_destroyed >= Confs.enemies_count then
     you_won:draw(nene, {0, 0})
-  elseif protagonist.life_points > 0 then
+  elseif protagonist.life_points > 0 and protagonist.pos.y < Confs.screen_size.h then
     bg_tex:draw(nene, nil, nil, {Confs.playable_space.margin, 0})
 
     protagonist:draw(nene)

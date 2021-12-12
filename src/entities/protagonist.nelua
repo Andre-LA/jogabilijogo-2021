@@ -28,6 +28,7 @@ local Protagonist = @record{
   vel: Vec2,
   sprite: Texture,
   proj_sprite: Texture,
+  heart_sprite: Texture,
   last_frame_changed: uint32,
   frame: integer,
   ammo: byte,
@@ -35,11 +36,12 @@ local Protagonist = @record{
   projectiles: [10]Entities.Projectile,
 }
 
-function Protagonist.init(sprite: Texture, proj_sprite: Texture): Protagonist
+function Protagonist.init(sprite: Texture, proj_sprite: Texture, heart_sprite: Texture): Protagonist
   return Protagonist{
-    pos = {Confs.screen_size.w // 2, 64},
+    pos = {Confs.screen_size.w // 2, 32},
     =sprite,
     =proj_sprite,
+    =heart_sprite,
     life_points = 10,
     vel = {0, -VER_MAX_SPEED},
     ammo = 10,
@@ -153,9 +155,21 @@ function Protagonist:draw(nene: *Nene)
   local hitbox = self:get_hitbox()
   local drawpos: Vec2 = {math.ifloor(self.pos.x), math.ifloor(self.pos.y)}
 
-  self.sprite:draw(nene, nil, {24 * self.frame, ysprite * 29, 24, 29}, Rect{drawpos.x, drawpos.y, 24, 29})
+  local lp_limit = math.ifloor((self.life_points+1)/2)
+  for i = 0, < 5 do
+    if i >= lp_limit then continue end
+    local idx = math.abs(math.abs(i - 2) - 2)
+    local h_offset = math.sin(idx * 0.65) * 2
+    local v_offset = math.sin((i/5)*0.75)*10
 
-  for i = 0, < (#self.projectiles) do
+    local src: Rect = {i < 5 - 1 and 0 or 7*(self.life_points % 2), 0, 7, 6}
+    local dst: Rect = Rect.from_vec2(drawpos + Vec2{8*h_offset + 12, -10 + 8*v_offset}, {7, 6})
+    self.heart_sprite:draw(nene, nil, src, dst)
+  end
+
+  self.sprite:draw(nene, nil, {24 * self.frame, ysprite * 29, 24, 29}, Rect.from_vec2(drawpos, {24, 29}))
+
+  for i = 0, < #self.projectiles do
     self.projectiles[i]:draw(nene)
   end
 end

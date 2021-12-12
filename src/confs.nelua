@@ -17,3 +17,5 @@ global Confs.frame_duration: uint32 = 100
 global Confs.playable_space: record{size: integer, margin: integer} = { PLAYABLE_SPACE, ((SCREEN_WIDTH - (PLAYABLE_SPACE + TILE_DIMENSIONS * 4)) / 2) }
 
 global Confs.enemy_spawn_interval: uint32 = 1000
+
+global Confs.enemies_count = 5
